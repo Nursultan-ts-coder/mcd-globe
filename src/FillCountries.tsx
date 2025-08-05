@@ -21,56 +21,39 @@ export function FillCountries({ json, radius, material }: any) {
         const polygons = feature.geometry.type === 'Polygon' ? [coords] : coords
 
         return polygons.map((polygon: any, i: number) => {
-          const ringsLatLng = polygon.map((ring: any) => ring.map(([lng, lat]: [number, number]) => ({ lat, lng })))
-
-          if (ringsLatLng.length === 0 || ringsLatLng[0].length < 3) return null
-
-          // Convert outer ring to flat 2D shape using lng/lat as x/y
-          const shape2D = new THREE.Shape(ringsLatLng[0].map(({ lng, lat }: any) => new THREE.Vector2(lng, lat)))
-
-          // Add holes
-          for (let h = 1; h < ringsLatLng.length; h++) {
-            const hole = new THREE.Path(ringsLatLng[h].map(({ lng, lat }: any) => new THREE.Vector2(lng, lat)))
+          // Triangulate the outer ring and holes in 2D
+          const shape2D = new THREE.Shape(polygon[0].map(([lng, lat]: [number, number]) => new THREE.Vector2(lng, lat)))
+          for (let h = 1; h < polygon.length; h++) {
+            const hole = new THREE.Path(polygon[h].map(([lng, lat]: [number, number]) => new THREE.Vector2(lng, lat)))
             shape2D.holes.push(hole)
           }
-
-          // Create flat geometry
           const flatGeometry = new THREE.ShapeGeometry(shape2D)
 
-          // Project vertices to sphere
+          // Project each vertex onto the sphere
           const pos = flatGeometry.attributes.position
           const sphericalPos: number[] = []
-
           for (let i = 0; i < pos.count; i++) {
             const lng = pos.getX(i)
             const lat = pos.getY(i)
             const v3 = latLngToVector3(lat, lng, radius)
             sphericalPos.push(v3.x, v3.y, v3.z)
           }
-
           const geometry3D = new THREE.BufferGeometry()
           geometry3D.setAttribute('position', new THREE.Float32BufferAttribute(sphericalPos, 3))
+          geometry3D.setIndex(flatGeometry.index)
           geometry3D.computeVertexNormals()
 
           return (
             <group key={`${idx}-${i}`}>
+              {/* Country fill */}
               <mesh geometry={geometry3D} material={material} />
               {/* Country borders */}
-              {ringsLatLng.map((ring: any, j: number) => {
-                const borderPoints = ring.map(
-                  ({ lat, lng }: any) => latLngToVector3(lat, lng, radius + 0.002), // tiny offset so it sits above the fill
+              {polygon.map((ring: any, j: number) => {
+                const borderPoints = ring.map(([lng, lat]: [number, number]) =>
+                  latLngToVector3(lat, lng, radius + 0.002),
                 )
                 borderPoints.push(borderPoints[0].clone())
-
-                return (
-                  <Line
-                    key={j}
-                    points={borderPoints} // array of THREE.Vector3
-                    color="green"
-                    lineWidth={2} // pixels on screen – make this as bold as you like
-                    dashed={false}
-                  />
-                )
+                return <Line key={j} points={borderPoints} color="rgba(1, 105, 250, 1)" lineWidth={2} dashed={false} />
               })}
             </group>
           )

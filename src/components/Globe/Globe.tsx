@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { FillCountries } from '../../FillCountries'
 import { BasicParticles } from '../Particles/Rings'
 import geoJson from '../../const/geojson.json' // Or fetch it dynamically
+import { GlobeShadow } from './GlobeShadow'
 
 const globeGeometry = new THREE.SphereGeometry(1, 64, 64)
 
@@ -22,22 +23,11 @@ function GlobeEdges() {
 }
 
 export default function Globe() {
-  // useEffect(() => {
-  //   async function loadData() {
-  //     setLoading(true)
-  //     const res = await fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
-  //     const json = await res.json()
-  //     setGeojson(json)
-  //     setLoading(false)
-  //   }
-  //   loadData()
-  // }, [])
-
   // Create country material
   const countryMaterial = new THREE.MeshPhongMaterial({
-    color: '0x00aaff',
+    color: 'rgba(15, 21, 53, 1)',
     transparent: true,
-    opacity: 0.5,
+    opacity: 0.8,
     side: THREE.DoubleSide,
   })
 
@@ -47,6 +37,7 @@ export default function Globe() {
       <pointLight position={[10, 10, 10]} />
       <BasicParticles />
       <GlobeEdges />
+      <GlobeShadow radius={4} />
       <Stars radius={100} depth={50} count={1000} factor={12} fade />
       <FillCountries json={geoJson} radius={radius + 0.05} material={countryMaterial} />
       <OrbitControls enableDamping={true} zoomSpeed={0.2} dampingFactor={0.05} />
